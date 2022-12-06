@@ -1,0 +1,4 @@
+experiment;resnet14;resnet32;
+full;3917.39;4853.71;
+nobn;3894.09;4817.5;
+bn;3801.63;4308.49;

@@ -1,0 +1,4 @@
+experiment;resnet14;resnet32;
+full;0.0;8.0;
+nobn;0.0;8.0;
+bn;2.0;0.0;
