@@ -27,12 +27,15 @@ Reference:
 If you use this implementation in you work, please don't forget to mention the
 author, Yerlan Idelbayev.
 '''
+import random
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 
 from torch.autograd import Variable
+
 
 __all__ = ['ResNet', 'resnet20', 'resnet32', 'resnet44', 'resnet56', 'resnet110', 'resnet1202']
 
@@ -45,6 +48,26 @@ def _weights_init(m):
         init.uniform_(m.weight, a=0, b=1)
         if m.bias is not None:
             init.zeros_(m.bias.data)
+
+def _random_conv_params_trainable(m):
+    if isinstance(m, nn.Conv2d):
+        out_ch, in_ch, k_h, k_w = m.weight.shape
+        multipl = torch.zeros_like(m.weight.grad.data)
+        for i in range(out_ch):
+            for _ in range(2):
+                j, k, l = rnd_indices([in_ch, k_h, k_w])
+                multipl[i, j, k, l] = torch.ones_like(multipl[i, j, k, l])
+            #while not(len(torch.unique(multipl)) == 2 and torch.unique(multipl, return_counts=True)[1][1].item() == (i + 1) * 2):
+            #    j, k, l = rnd_indices([in_ch, k_h, k_w])
+            #    multipl[i, j, k, l] = torch.ones_like(multipl[i, j, k, l])
+        m.weight.grad.data = torch.mul(m.weight.grad.data, multipl)
+
+
+def rnd_indices(highs):
+    res = []
+    for high in highs:
+        res.append(random.randint(a=0, b=high - 1))
+    return res
 
 class LambdaLayer(nn.Module):
     def __init__(self, lambd):
@@ -109,6 +132,9 @@ class ResNet(nn.Module):
             self.in_planes = planes * block.expansion
 
         return nn.Sequential(*layers)
+    
+    def random_conv_params_trainable(self):
+        self.apply(_random_conv_params_trainable)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))

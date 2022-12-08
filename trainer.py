@@ -22,9 +22,9 @@ model_names = sorted(name for name in resnet.__dict__
                      and name.startswith("resnet")
                      and callable(resnet.__dict__[name]))
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-experiment_types = ['full', 'nobn', 'bn']
+experiment_types = ['full', 'nobn', 'bn', 'random']
 
 parser = argparse.ArgumentParser(description='Propert ResNets for CIFAR10 in pytorch')
 parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet32',
@@ -65,7 +65,7 @@ parser.add_argument('--save-every', dest='save_every',
                     help='Saves checkpoints at every specified number of epochs',
                     type=int, default=10)
 parser.add_argument('--lr-drop-factor', dest='lr_drop_factor', type=float,
-                    help="At epochs specified in --lr_drop_epochs, learning rate is multiplied by this number.")
+                    help='At epochs specified in --lr_drop_epochs, learning rate is multiplied by this number.')
 parser.add_argument('--lr-drop-epochs', dest='lr_drop_epochs', nargs='*',
                     help='At specified epochs, learning rate is multiplied by --lr-drop-factor')
 best_prec1 = 0
@@ -81,7 +81,8 @@ def main():
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
 
-    model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
+    #model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
+    model = resnet.__dict__[args.arch]()
     model.to(device)
     freeze_parameters(model=model, experiment_type=args.experiment_type)
     summary(model=model, input_size=(3, 32, 32))
@@ -155,11 +156,11 @@ def main():
         #torch.cuda.synchronize(device)
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
         start = time.time()
-        train(train_loader, model, criterion, optimizer, epoch)
+        train(train_loader, model, criterion, optimizer, epoch, args.experiment_type)
         if not gpu_result:
             gpu_result = subprocess.run(['nvidia-smi'], stdout=subprocess.PIPE).stdout.decode()
             pid = str(os.getpid())
-            gpu_result = gpu_result.split("\n")
+            gpu_result = gpu_result.split('\n')
             gpu_result = [line for line in gpu_result if pid in line][0]
         lr_scheduler.step()
 
@@ -184,40 +185,34 @@ def main():
                 'state_dict': model.state_dict(),
                 'best_prec1': best_prec1,
             }, is_best, filename=os.path.join(args.save_dir, 'model.th'))
-    print(f"GPU time: {sum(times)} s")
-    print(f"GPU memory {gpu_result}")
+    print(f'GPU time: {sum(times)} s')
+    print(f'GPU memory {gpu_result}')
     
 
 def freeze_parameters(model, experiment_type):
-    if experiment_type not in ['full', 'nobn', 'bn']:
+    if experiment_type not in ['full', 'nobn', 'bn', 'random']:
         raise ValueError()
     for name, param in model.named_parameters():
-        #print(param[0][0][0][0])
-        #print(param[0][0][0][0].grad_fn)
-        #print(type(param[0][0][0][0].grad_fn))
-        if "bn" in name:
-            if experiment_type == "full":
-                param.requires_grad = True
-            if experiment_type == "nobn":
+        if experiment_type == 'full':
+            param.requires_grad = True
+        if experiment_type == 'nobn':
+            if 'bn' in name:
                 param.requires_grad = False
-            if experiment_type == "bn":
+            else:
                 param.requires_grad = True
-        if "bn" not in name:
-            if experiment_type == "full":
+        if experiment_type == 'bn':
+            if 'bn' in name:
                 param.requires_grad = True
-            if experiment_type == "nobn":
-                param.requires_grad = True
-            if experiment_type == "bn":
+            else:
                 param.requires_grad = False
-        #print(name)
-        #print(param.requires_grad)
-        #print(param[0][0][0][0])
-        #print(param[0][0][0][0].grad_fn)
-        #print(type(param[0][0][0][0].grad_fn))
-        #raise ValueError()
+        if experiment_type == 'random':
+            if 'conv' in name:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
 
 
-def train(train_loader, model, criterion, optimizer, epoch):
+def train(train_loader, model, criterion, optimizer, epoch, experiment_type):
     """
         Run one train epoch
     """
@@ -247,6 +242,10 @@ def train(train_loader, model, criterion, optimizer, epoch):
         # compute gradient and do SGD step
         optimizer.zero_grad()
         loss.backward()
+
+        if experiment_type == 'random':
+            model.random_conv_params_trainable()
+
         optimizer.step()
 
         output = output.float()
@@ -364,7 +363,7 @@ if __name__ == '__main__':
     start_total = time.time()
     main()
     end_total = time.time()
-    print(f"Total time: {end_total - start_total} s.")
+    print(f'Total time: {end_total - start_total} s.')
     process = psutil.Process(os.getpid())
     ram_result = process.memory_info()[0]
-    print(f"RAM: {ram_result} B")
+    print(f'RAM: {ram_result} B')

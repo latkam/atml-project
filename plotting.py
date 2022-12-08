@@ -14,7 +14,8 @@ MODEL_NAME = "model.th"
 experiments_hr = {
     "full": "All Params Trainable",
     "nobn": "Everything except BatchNorm",
-    "bn": "Only BatchNorm"
+    "bn": "Only BatchNorm",
+    "random": "2 random conv features per channel"
 }
 
 experiments_hist_colours = {
@@ -126,6 +127,7 @@ def main():
         "full",
         "nobn",
         "bn",
+        "random"
     ]
     experiments_reduced = ["full", "bn"]
     plots_accuracy(models, experiments)
