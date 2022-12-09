@@ -1,5 +1,5 @@
-experiment;resnet14;resnet32;
-full;1350;1374;
-nobn;1350;1374;
-bn;1380;1412;
-random;1350;1374;
+experiment;resnet14;resnet32;resnet56;resnet110;
+full;1350;1374;1378;1388;
+nobn;1350;1374;1378;1388;
+bn;1380;1412;1494;1678;
+random;1350;1374;1378;1388;
