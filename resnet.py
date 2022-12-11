@@ -51,7 +51,7 @@ def _weights_init(m):
 
 def _random_conv_params_trainable(m):
     if isinstance(m, nn.Conv2d):
-        out_ch, in_ch, k_h, k_w = m.weight.shape
+        out_ch, in_ch, k_h, k_w = m.weight.grad.data.shape
         multipl = torch.zeros_like(m.weight.grad.data)
         for i in range(out_ch):
             for _ in range(2):
