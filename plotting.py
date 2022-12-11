@@ -117,10 +117,10 @@ def main():
     models = [
         "resnet14",
         "resnet32",
-        #"resnet56",
-        #"resnet110",
-        #"resnet218",
-        #"resnet434",
+        "resnet56",
+        "resnet110",
+        "resnet218",
+        "resnet434",
         #"resnet866"
     ]
     experiments = [
