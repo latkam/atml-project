@@ -68,6 +68,7 @@ parser.add_argument('--lr-drop-factor', dest='lr_drop_factor', type=float,
                     help='At epochs specified in --lr_drop_epochs, learning rate is multiplied by this number.')
 parser.add_argument('--lr-drop-epochs', dest='lr_drop_epochs', nargs='*',
                     help='At specified epochs, learning rate is multiplied by --lr-drop-factor')
+
 best_prec1 = 0
 
 
@@ -75,6 +76,7 @@ def main():
     gpu_result, ram_result = None, None
     global args, best_prec1
     args = parser.parse_args()
+    args.lr_drop_epochs = [int(epoch) for epoch in args.lr_drop_epochs]
 
 
     # Check the save_dir exists or not
