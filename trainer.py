@@ -141,11 +141,11 @@ def main():
                                                         milestones=args.lr_drop_epochs, last_epoch=args.start_epoch - 1,
                                                         gamma=args.lr_drop_factor)
 
-    if args.arch in ['resnet1202', 'resnet110']:
-        # for resnet1202 original paper uses lr=0.01 for first 400 minibatches for warm-up
-        # then switch back. In this setup it will correspond for first epoch.
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = args.lr*0.1
+    #if args.arch in ['resnet1202', 'resnet110']:
+    #    # for resnet1202 original paper uses lr=0.01 for first 400 minibatches for warm-up
+    #    # then switch back. In this setup it will correspond for first epoch.
+    #    for param_group in optimizer.param_groups:
+    #        param_group['lr'] = args.lr*0.1
 
 
     if args.evaluate:

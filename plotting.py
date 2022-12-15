@@ -41,7 +41,7 @@ def plots_accuracy(models, experiments):
         plt.plot(xticks, accs, label=experiments_hr[experiment])
     plt.title("Accuracies")
     plt.legend()
-    plt.xticks(ticks=xticks, labels=models, rotation=45)
+    plt.xticks(ticks=xticks, labels=models)
     plt.xlabel("Models")
     plt.ylabel("Accuracy [%]")
     plt.savefig(os.path.join(PATH_PLOTS, "accuracies.png"))
@@ -53,7 +53,7 @@ def plots_gamma_distro(models, experiments):
             fig = plt.figure()
             for experiment in experiments:
                 gammas = []
-                params = torch.load(os.path.join(PATH_CHECKPOINTS, f"{model}-{experiment}", "model.th"))["state_dict"]
+                params = torch.load(os.path.join(PATH_CHECKPOINTS, f"{model}-{experiment}", MODEL_NAME))["state_dict"]
                 for name, param  in params.items():
                     if "bn" in name and "weight" in name:
                         gammas.extend(param.view(-1,).tolist())
