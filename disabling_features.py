@@ -141,7 +141,8 @@ def zero_gammas(model, threshold):
     with torch.no_grad():
         for name, param in model.named_parameters():
             if "bn" in name and "weight" in name:
-                param.data[param.data < threshold] = torch.zeros_like(param.data[param.data < threshold])
+                param_data_abs = torch.abs(param.data)
+                param.data[param_data_abs < threshold] = torch.zeros_like(param.data[param_data_abs < threshold])
 
 
 
