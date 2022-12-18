@@ -10,6 +10,7 @@ PATH_CHECKPOINTS = "./checkpoints"
 PATH_LOGS = "./logs"
 PATH_PLOTS = "./plots"
 MODEL_NAME = "model.th"
+NUM_EPOCHS = 160
 
 experiments_hr = {
     "full": "All Params Trainable",
@@ -47,6 +48,35 @@ def plots_accuracy(models, experiments):
     plt.savefig(os.path.join(PATH_PLOTS, "accuracies.png"))
 
 
+def plot_accuracy_evolution(models, experiments):
+    values = {}
+    with tqdm(range(len(models) * len(experiments)), desc="Accuracy evolution") as pbar:
+        for model in models:
+            for experiment in experiments:
+                values[experiment] = []
+                with open(os.path.join(PATH_LOGS, f"log-{model}-{experiment}.txt"), "r") as file:
+                    lines = file.readlines()
+                    lines = [line for line in lines if "* Prec@1" in line]
+                    for line in lines:
+                        found = re.findall("\d+\.\d+", line)
+                        if len(found) > 0:
+                            values[experiment].append(float(found[-1]))
+                        else:
+                            values[experiment].append(None)
+                pbar.update()
+            fig = plt.figure()
+            xticks = list(range(NUM_EPOCHS))
+            for experiment, accs in values.items():
+                experiment_hr = experiments_hr[experiment]
+                plt.plot(xticks, accs, label=experiment_hr)
+            plt.title(f"Accuracies during training - {model}")
+            plt.legend()
+            plt.xlabel("Epochs")
+            plt.ylabel("Accuracy [%]")
+            plt.savefig(os.path.join(PATH_PLOTS, f"accuracies-evolution-{model}.png"))
+                    
+
+
 def plots_gamma_distro(models, experiments):
     with tqdm(range(len(models)), desc="Gamma distributions plots") as pbar:
         for model in models:
@@ -68,25 +98,31 @@ def plots_gamma_distro(models, experiments):
  
 def resources_tables(models, experiments):
     def process_gpu_time(lines):
-        return round(float(re.findall("\d+\.\d+", lines[-4])[-1]), 2)
+        gpu_time = float(re.findall("\d+\.\d+", lines[-4])[-1])
+        return round(gpu_time / 3600, 3)
     
     def process_gpu_memory(lines):
-        # lines[-3]  appropriate line of the output
-        # [-1] the last element in the array
-        # [:-3] stripping MiB
-        return int(re.findall("\d+MiB", lines[-3])[-1][:-3])
+        gpu_memory = int(re.findall("\d+", lines[-3])[-1])
+        return round(gpu_memory / 1e3, 3)
     
     def process_total_time(lines):
-        return round(float(re.findall("\d+\.\d+", lines[-2])[-1]), 2)
+        total_time = float(re.findall("\d+\.\d+", lines[-2])[-1])
+        return round(total_time / 3600, 3)
     
     def process_ram(lines):
-        return float(re.findall("\d", lines[-1])[-1])
+        ram = int(re.findall("\d+", lines[-1])[-1])
+        return round(ram / 1e9, 3)
     
     res = {
-        "gpu_time": "experiment;",
-        "gpu_memory": "experiment;",
-        "total_time": "experiment;",
-        "ram": "experiment;"
+        "gpu_time": "experiment [h];",
+        "gpu_memory": "experiment [GB];",
+        "total_time": "experiment [h];",
+        "ram": "experiment [GB];"
+    }
+    
+    sums = {
+        "gpu_time": 0,
+        "total_time": 0
     }
     
     for model in models:
@@ -105,12 +141,21 @@ def resources_tables(models, experiments):
                     res["gpu_memory"] += f"{process_gpu_memory(lines)};"
                     res["total_time"] += f"{process_total_time(lines)};"
                     res["ram"] += f"{process_ram(lines)};"
+
+                    sums["gpu_time"] += process_gpu_time(lines)
+                    sums["total_time"] += process_total_time(lines)
             for res_name in res.keys():
                 res[res_name] += "\n"
             pbar.update()
     for res_name, res_val in res.items():
         with open(os.path.join(PATH_PLOTS, f"{res_name}.csv"), "w") as file:
             file.write(res_val)
+    with open(os.path.join(PATH_PLOTS, "total.txt"), "w") as file:
+        lines = []
+        for sums_name, sums_val in sums.items():
+            lines.append(f"total {sums_name}: {sums_val}")
+        file.writelines(line + "\n" for line in lines)
+        
 
 def main():
     os.makedirs(PATH_PLOTS, exist_ok=True)
@@ -131,6 +176,7 @@ def main():
     ]
     experiments_reduced = ["full", "bn"]
     plots_accuracy(models, experiments)
+    plot_accuracy_evolution(models, experiments)
     plots_gamma_distro(models, experiments_reduced)
     resources_tables(models, experiments)
 
