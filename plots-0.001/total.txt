@@ -1,0 +1,2 @@
+total gpu_time: 37.623999999999995
+total total_time: 37.709

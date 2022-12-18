@@ -1,0 +1,5 @@
+experiment [GB];resnet14;resnet32;resnet56;
+full;1.35;1.374;1.378;
+nobn;1.35;1.374;1.378;
+bn;1.38;1.412;1.494;
+random;1.35;1.374;1.378;
